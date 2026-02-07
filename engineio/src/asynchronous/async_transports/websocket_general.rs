@@ -1,6 +1,6 @@
 use std::{borrow::Cow, str::from_utf8, sync::Arc, task::Poll};
 
-use crate::{error::Result, Error, Packet, PacketId};
+use crate::{error::Result, packet::RAW_BINARY_MARKER, Error, Packet, PacketId};
 use bytes::{BufMut, Bytes, BytesMut};
 use futures_util::{
     ready,
@@ -87,9 +87,8 @@ impl AsyncWebsocketGeneralTransport {
                 Some(Ok(Message::Text(str))) => return Ok(Some(Bytes::from(str))),
                 Some(Ok(Message::Binary(data))) => {
                     let mut msg = BytesMut::with_capacity(data.len() + 1);
-                    msg.put_u8(PacketId::Message as u8);
+                    msg.put_u8(RAW_BINARY_MARKER);
                     msg.put(data.as_ref());
-
                     return Ok(Some(msg.freeze()));
                 }
                 // ignore packets other than text and binary
@@ -116,7 +115,7 @@ impl Stream for AsyncWebsocketGeneralTransport {
                 Some(Ok(Message::Text(str))) => return Poll::Ready(Some(Ok(Bytes::from(str)))),
                 Some(Ok(Message::Binary(data))) => {
                     let mut msg = BytesMut::with_capacity(data.len() + 1);
-                    msg.put_u8(PacketId::Message as u8);
+                    msg.put_u8(RAW_BINARY_MARKER);
                     msg.put(data.as_ref());
 
                     return Poll::Ready(Some(Ok(msg.freeze())));
