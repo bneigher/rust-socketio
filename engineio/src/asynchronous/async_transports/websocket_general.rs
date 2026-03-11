@@ -1,6 +1,6 @@
 use std::{borrow::Cow, str::from_utf8, sync::Arc, task::Poll};
 
-use crate::{error::Result, packet::RAW_BINARY_MARKER, Error, Packet, PacketId};
+use crate::{error::Result, Error, Packet, PacketId};
 use bytes::{BufMut, Bytes, BytesMut};
 use futures_util::{
     ready,
@@ -86,9 +86,12 @@ impl AsyncWebsocketGeneralTransport {
             match next {
                 Some(Ok(Message::Text(str))) => return Ok(Some(Bytes::from(str))),
                 Some(Ok(Message::Binary(data))) => {
+                    // For WebSocket binary frames (attachments), use 'B' (0x42) as marker
+                    // This indicates raw binary that should bypass normal packet parsing
                     let mut msg = BytesMut::with_capacity(data.len() + 1);
-                    msg.put_u8(RAW_BINARY_MARKER);
+                    msg.put_u8(b'B'); // Raw binary marker
                     msg.put(data.as_ref());
+
                     return Ok(Some(msg.freeze()));
                 }
                 // ignore packets other than text and binary
@@ -114,8 +117,10 @@ impl Stream for AsyncWebsocketGeneralTransport {
             match next {
                 Some(Ok(Message::Text(str))) => return Poll::Ready(Some(Ok(Bytes::from(str)))),
                 Some(Ok(Message::Binary(data))) => {
+                    // For WebSocket binary frames (attachments), use 'B' (0x42) as marker
+                    // This indicates raw binary that should bypass normal packet parsing
                     let mut msg = BytesMut::with_capacity(data.len() + 1);
-                    msg.put_u8(RAW_BINARY_MARKER);
+                    msg.put_u8(b'B'); // Raw binary marker (not a standard Engine.IO packet type)
                     msg.put(data.as_ref());
 
                     return Poll::Ready(Some(Ok(msg.freeze())));

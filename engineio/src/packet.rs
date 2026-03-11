@@ -9,12 +9,8 @@ use std::ops::Index;
 
 use crate::error::{Error, Result};
 
-/// Internal marker byte for raw WebSocket binary frames.
-///
-/// This is **not** a standard Engine.IO packet type (the spec defines types 0–6).
-/// It is used only within the library to distinguish binary WebSocket frames
-/// from text-encoded packets so that binary data bypasses UTF-8 / base64 parsing.
-pub(crate) const RAW_BINARY_MARKER: u8 = b'B';
+/// Byte marker for raw binary payloads (WebSocket binary frames), as opposed to base64 'b'.
+pub const RAW_BINARY_MARKER: u8 = b'B';
 
 /// Enumeration of the `engine.io` `Packet` types.
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
@@ -73,7 +69,7 @@ impl TryFrom<u8> for PacketId {
             4 | b'4' => Ok(PacketId::Message),
             5 | b'5' => Ok(PacketId::Upgrade),
             6 | b'6' => Ok(PacketId::Noop),
-            RAW_BINARY_MARKER => Ok(PacketId::MessageBinary),
+            RAW_BINARY_MARKER => Ok(PacketId::MessageBinary), // Raw binary marker from WebSocket binary frames
             _ => Err(Error::InvalidPacketId(b)),
         }
     }
